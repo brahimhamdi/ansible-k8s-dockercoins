@@ -1,10 +1,6 @@
 - hosts: all
   become: yes
   tasks:
-    - fail:
-       msg: "OS should be Ubuntu 22.04, not {{ ansible_distribution }} {{ ansible_distribution_version }}"
-      when: ansible_distribution != 'Ubuntu' or ansible_distribution_version != '22.04'
-
     - name: update APT packages
       apt:
         update_cache: yes
@@ -99,13 +95,7 @@
         path: /etc/containerd/config.toml
         regexp: '            SystemdCgroup = false'
         line: '            SystemdCgroup = true'
-
-    - name: enable the Containerd service and start it
-      systemd:
-        name: containerd
-        state: restarted
-        enabled: yes
-        daemon-reload: yes
+      notify: restart_containerd
 
     - name: install Kubelet
       apt:
@@ -137,6 +127,13 @@
       sysctl:
         name: net.ipv4.ip_forward
         value: 1
+  handlers:
+    - name: restart_containerd
+      systemd:
+        name: containerd
+        state: restarted
+        enabled: yes
+        daemon-reload: yes
 
 - hosts: master
   become: yes
